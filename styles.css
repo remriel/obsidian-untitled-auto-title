@@ -1,0 +1,103 @@
+.auto-title-settings {
+  --at-ink: #18151b;
+  --at-yellow: #f9ff55;
+  --at-cyan: #73f0ff;
+  --at-pink: #ff92d2;
+}
+
+.auto-title-settings .auto-title-banner {
+  padding: 20px 22px;
+  margin: 8px 7px 30px 0;
+  background: var(--at-yellow);
+  color: var(--at-ink);
+  border: 3px solid var(--at-ink);
+  border-radius: 0;
+  box-shadow: 6px 6px 0 var(--at-ink);
+}
+
+.auto-title-settings .auto-title-banner h2 {
+  margin: 0 0 12px;
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--at-ink);
+  letter-spacing: -0.7px;
+}
+
+.auto-title-settings .auto-title-banner p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.auto-title-settings .auto-title-detail {
+  font-size: 0.88em;
+}
+
+.auto-title-settings h3 {
+  display: inline-block;
+  margin: 28px 0 12px;
+  padding: 7px 12px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  background: var(--at-cyan);
+  color: var(--at-ink);
+  border: 2px solid var(--at-ink);
+  box-shadow: 3px 3px 0 var(--at-ink);
+}
+
+.auto-title-settings .auto-title-key-status {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  color: var(--at-ink);
+  background: var(--at-cyan);
+  border: 2px solid var(--at-ink);
+  font-weight: 650;
+}
+
+.auto-title-settings .setting-item-name {
+  font-weight: 750;
+}
+
+.auto-title-settings textarea {
+  min-height: 78px;
+  width: 220px;
+  resize: vertical;
+}
+
+.auto-title-settings input[type="number"] {
+  width: 90px;
+}
+
+.auto-title-settings button.mod-cta {
+  border: 2px solid var(--at-ink);
+  border-radius: 0;
+  color: var(--at-ink);
+  background: var(--at-pink);
+  box-shadow: 3px 3px 0 var(--at-ink);
+  font-weight: 850;
+}
+
+.auto-title-settings button.mod-cta:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--at-ink);
+}
+
+.auto-title-settings .auto-title-help {
+  margin-top: 24px;
+  padding: 16px;
+  border: 2px solid var(--at-ink);
+  color: var(--at-ink);
+  background: var(--at-pink);
+  box-shadow: 4px 4px 0 var(--at-ink);
+}
+
+.auto-title-settings .auto-title-help p {
+  margin: 10px 0 0;
+  line-height: 1.55;
+}
+
+.auto-title-status.auto-title-error {
+  color: var(--text-error);
+  font-weight: 700;
+}

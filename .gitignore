@@ -1,0 +1,8 @@
+node_modules/
+.test/
+releases/
+data.json
+.env
+.env.*
+*.log
+verification-private/
