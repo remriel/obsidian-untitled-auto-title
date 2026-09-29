@@ -20,21 +20,23 @@ Default model: `openai/gpt-oss-20b`. Requests use Groq's [chat completions API](
 
 ## Installation
 
-Requires Obsidian desktop 1.12 or newer.
+Requires Obsidian desktop 1.13 or newer.
 
 ### Windows installer
 
-Extract the release ZIP and run its `Install.ps1` with your vault path:
+From a source checkout, install dependencies and build, then run the installer with your vault path:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\Install.ps1 -VaultPath 'C:\path\to\your vault'
+npm install
+npm run build
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -VaultPath 'C:\path\to\your vault'
 ```
 
 Restart Obsidian after installation. The script enables this plugin and preserves the existing enabled-plugin list. Existing plugin files are backed up before an update. It does not store an API key or alter your note contents.
 
 ### Manual installation
 
-Copy `main.js`, `manifest.json`, and `styles.css` into:
+Download `main.js`, `manifest.json`, and `styles.css` from the GitHub release and copy them into:
 
 ```text
 <vault>/.obsidian/plugins/untitled-auto-title/
@@ -46,12 +48,11 @@ Restart Obsidian, then enable **Untitled Auto Title** under **Settings → Commu
 
 Open **Settings → Untitled Auto Title** to change the idle delay, minimum note content, maximum title length, Groq model, environment variable name, excluded folders, and placeholder names. The connection test uses a built-in sample note.
 
-On Obsidian 1.13 and later, these controls are available in Obsidian's settings search. Older versions use the same controls through the compatibility settings page.
+These controls are available in Obsidian's settings search. Version 1.0.2 uses the declarative settings API and requires Obsidian 1.13.
 
 The command palette includes:
 
 - **Generate title for current untitled note**
-- **Generate titles for all untitled notes**
 - **Undo last generated title**
 - **Test Groq connection with a sample note**
 
@@ -70,6 +71,7 @@ Select **Local heading or phrase** for offline extraction. Groq errors never sil
 ## Rename behavior
 
 - Requests are serialized to avoid bursts.
+- Notes are processed when created, edited, or opened; startup checks only the active note. The plugin does not enumerate the vault or offer a full-vault bulk scan.
 - The plugin checks that the note still exists, remains untitled, and has not changed before applying the result.
 - Existing filenames are preserved. Duplicate titles receive a numeric suffix.
 - Titles are sanitized for Windows filenames and Obsidian links.
@@ -89,6 +91,17 @@ npm run build
 ```
 
 The test suite covers rename safety, changed content, manual title choices, collisions, exclusion rules, credential handling, debouncing, serialized requests, and undo. It uses synthetic content and mocked Groq responses; live service verification is recorded separately in `docs/PROGRESS.md`.
+
+## Release provenance
+
+Version tags trigger `.github/workflows/release.yml`. GitHub Actions builds the plugin once, creates build-provenance attestations for `main.js`, `manifest.json`, and `styles.css`, and publishes those three assets. Installer ZIP files are kept as local deliverables instead of GitHub release attachments.
+
+Verify a downloaded asset with GitHub CLI:
+
+```text
+gh attestation verify main.js --repo remriel/obsidian-untitled-auto-title
+gh attestation verify styles.css --repo remriel/obsidian-untitled-auto-title
+```
 
 ## Removal
 

@@ -1,0 +1,72 @@
+name: Build and attest release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Check release metadata
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const versions = JSON.parse(fs.readFileSync('versions.json', 'utf8'));
+          if (!/^\d+\.\d+\.\d+$/.test(manifest.version)
+              || manifest.version !== process.env.GITHUB_REF_NAME
+              || pkg.version !== manifest.version
+              || versions[manifest.version] !== manifest.minAppVersion) {
+            throw new Error('Release tag, package, manifest, and compatibility metadata must agree.');
+          }
+          fs.accessSync(`docs/release-notes-${manifest.version}.md`);
+          console.log(`Release ${manifest.version}; minimum Obsidian ${manifest.minAppVersion}`);
+          NODE
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Build production plugin once
+        run: npm run build
+
+      - name: Attest release assets
+        id: provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
+      - name: Publish supported Obsidian assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" main.js manifest.json styles.css \
+            --verify-tag \
+            --title "Untitled Auto Title $GITHUB_REF_NAME" \
+            --notes-file "docs/release-notes-$GITHUB_REF_NAME.md"

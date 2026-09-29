@@ -165,11 +165,11 @@ export function localTitle(content: string, maxLength: number): string {
   return sanitizeTitle(phrase, maxLength);
 }
 
-export function uniquePath(path: string, title: string, exists: (candidate: string) => boolean): string {
+export async function uniquePath(path: string, title: string, exists: (candidate: string) => boolean | Promise<boolean>): Promise<string> {
   const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
   for (let count = 1; count <= 10000; count++) {
     const candidate = `${folder}${title}${count === 1 ? "" : ` ${count}`}.md`;
-    if (!exists(candidate)) return candidate;
+    if (!await exists(candidate)) return candidate;
   }
   throw new Error("There are too many notes with this title. The note was left untitled.");
 }

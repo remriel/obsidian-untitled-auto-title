@@ -1,6 +1,6 @@
 {
   "name": "obsidian-untitled-auto-title",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Generate content-based titles for untitled Obsidian notes using Groq.",
   "scripts": {

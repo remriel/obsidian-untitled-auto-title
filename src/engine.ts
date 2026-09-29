@@ -9,7 +9,7 @@ export interface NoteFile {
 export interface EngineDependencies<T extends NoteFile> {
   settings: () => TitleSettings;
   read: (file: T) => Promise<string>;
-  exists: (path: string) => boolean;
+  exists: (path: string) => boolean | Promise<boolean>;
   contains: (file: T) => boolean;
   canTitle: (content: string) => boolean;
   generate: (content: string, settings: TitleSettings) => Promise<string>;
@@ -113,7 +113,7 @@ export class TitleEngine<T extends NoteFile> {
         || await this.dependencies.read(file) !== content) return false;
       const title = sanitizeTitle(rawTitle, settings.maximumTitleLength);
       if (!title || isUntitled(title, settings.untitledPrefixes)) throw new Error("No useful title was generated. The note was left untitled.");
-      const newPath = uniquePath(oldPath, title, path => this.dependencies.exists(path));
+      const newPath = await uniquePath(oldPath, title, path => this.dependencies.exists(path));
       // A read can yield to other editor events, so guard once more immediately before the rename.
       if (this.disposed || epoch !== this.epoch || file.path !== oldPath || !this.eligible(file)
         || (this.revisions.get(file) ?? 0) !== revision) return false;
@@ -138,14 +138,23 @@ export class TitleEngine<T extends NoteFile> {
     }
   }
 
-  async undo(): Promise<boolean> {
-    await this.serial;
+  undo(): Promise<boolean> {
+    const epoch = this.epoch;
+    const job = this.serial.then(() => this.undoCurrent(epoch));
+    this.serial = job.catch(() => undefined);
+    return job;
+  }
+
+  private async undoCurrent(epoch: number): Promise<boolean> {
     const entry = this.history.at(-1);
-    if (this.disposed || !entry || !this.dependencies.contains(entry.file) || entry.file.path !== entry.newPath) return false;
-    if (this.dependencies.exists(entry.oldPath)) throw new Error("The original Untitled filename is now in use. Nothing was overwritten.");
+    if (this.disposed || epoch !== this.epoch || !entry || !this.dependencies.contains(entry.file) || entry.file.path !== entry.newPath) return false;
+    if (await this.dependencies.exists(entry.oldPath)) throw new Error("The original Untitled filename is now in use. Nothing was overwritten.");
+    const stillCurrent = (): boolean => !this.disposed && epoch === this.epoch
+      && this.dependencies.contains(entry.file) && entry.file.path === entry.newPath;
+    if (!stillCurrent()) return false;
     this.cancel(entry.file);
     this.suspended.add(entry.file);
-    await this.dependencies.rename(entry.file, entry.oldPath);
+    await this.dependencies.rename(entry.file, entry.oldPath, stillCurrent);
     this.history.pop();
     this.dependencies.onStatus?.();
     return true;

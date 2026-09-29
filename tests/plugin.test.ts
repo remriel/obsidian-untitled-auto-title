@@ -111,10 +111,10 @@ test("local mode extracts a heading or readable phrase", () => {
   assert.equal(localTitle("- [ ] Plan [[garden|the garden]] together.", 80), "Plan the garden together");
 });
 
-test("duplicate filenames get a suffix in their original folder", () => {
+test("duplicate filenames get a suffix in their original folder", async () => {
   const occupied = new Set(["Inbox/Community garden.md", "Inbox/Community garden 2.md"]);
-  assert.equal(uniquePath("Inbox/Untitled.md", "Community garden", path => occupied.has(path)), "Inbox/Community garden 3.md");
-  assert.equal(uniquePath("Untitled.md", "Community garden", () => false), "Community garden.md");
+  assert.equal(await uniquePath("Inbox/Untitled.md", "Community garden", path => occupied.has(path)), "Inbox/Community garden 3.md");
+  assert.equal(await uniquePath("Untitled.md", "Community garden", () => false), "Community garden.md");
 });
 
 test("Groq uses the fixed endpoint, bounded text, and a title-only JSON response", async () => {

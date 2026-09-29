@@ -1,33 +1,33 @@
 # Progress
 
-Objective: correct the actionable Obsidian Community directory scan findings and publish/install version 1.0.1.
+Objective: resolve remaining compatibility, deprecation, vault-enumeration, unsupported-asset, and missing-attestation findings in version 1.0.2.
 
-Progress: 95% [#########-] — code fixes built, installed, and published; the directory's refreshed scan result is unconfirmed.
+Progress: 45% [#####-----] — remaining source findings addressed; attested CI build and installation remain.
 
-- [x] Read instructions, state/progress, actual source, Git state, API types, and current repository/release metadata.
-- [x] Replace four direct HTML settings headings with native headings; add declarative searchable settings for Obsidian 1.13+ and preserve the older fallback.
-- [x] Scope all plugin timers to window, narrow YAML/Groq unknown values, and remove problematic regex characters/escaping.
-- [x] Remove child_process/registry execution from the plugin while retaining inherited environment key access.
-- [x] Preserve the existing key-free local heading/phrase mode and clarify its selector label.
-- [x] Build once, install the update while preserving settings, and package it. The installer confirmed matching file hashes and backed up the prior plugin.
-- [x] Push completed source and publish version 1.0.1 with main.js, manifest.json, styles.css, and installer ZIP assets.
-- [ ] Fresh directory review: triggered by the new release; outcome pending.
+- [x] Reconcile instructions, source/Git state, and the user's latest scan report.
+- [x] Set minAppVersion to 1.13.0 and remove deprecated display fallback.
+- [x] Remove full-vault scans and bulk command; use event-driven notes and direct asynchronous collision checks with guarded queued undo.
+- [x] Prepare official pinned GitHub Actions build/attestation/release workflow; remove generated main.js from tracked source.
+- [ ] Push source/tag, complete the single CI production build, and publish three supported assets with attestations.
+- [ ] Download published assets and verify requested main.js/styles.css attestations.
+- [ ] Install those exact assets while preserving settings and create a local-only installer ZIP.
+- [ ] Directory rescan: result must remain unconfirmed until observed.
 
-Current state: version 1.0.1 is installed/enabled in the vault. Source code commit a7ce46b is pushed. Existing settings, title safeguards, and offline mode are retained.
+Current state: 1.0.2 source is ready. Version 1.0.1 remains installed until the attested CI assets are available. Existing settings and key-free local mode are retained.
 
-Release: https://github.com/remriel/obsidian-untitled-auto-title/releases/tag/1.0.1
+Planned release: https://github.com/remriel/obsidian-untitled-auto-title/releases/tag/1.0.2
 
-Deliverables: outputs/untitled-auto-title-1.0.1.zip and the updated setup guide.
+Planned deliverables: local-only outputs/untitled-auto-title-1.0.2.zip and the updated setup guide.
 
-Blockers: none for building or publishing. The malware-scan-unavailable disclosure belongs to the directory service and cannot be fixed in plugin code.
+Blockers: none currently. GitHub Actions is enabled and official actions are allowed in the public repository. The malware-scan-unavailable disclosure remains a directory service limitation.
 
-Verification: the single production build succeeded and the installer confirmed file hashes. No additional tests, type checking, linting, or UI checks were run in this update, following build-once-publish. Release 1.0.0 previously had 23 passing safety tests and a reproducible production build. Earlier direct Groq connectivity returned HTTP 403; native acceptance remains with the user.
+Verification plan: the production build runs only in GitHub Actions for verifiable provenance. Confirm its completion, requested asset attestations, and installation hashes. No extra tests, lint, type checking, or UI checks are planned under build-once-publish. Prior direct Groq connectivity returned HTTP 403; native acceptance remains with the user.
 
 Repository: https://github.com/remriel/obsidian-untitled-auto-title (public).
 
 ## Exact next steps
 
-1. User reopens Obsidian to load 1.0.1.
-2. For key-free titles, select Title generator → Local heading or phrase (no key).
-3. The directory can detect the new release automatically; user may use Check for new releases / Request review for an immediate recheck.
-4. Resume only if the user supplies remaining scan findings or requests further work. No more validation is running.
+1. Commit source and push main plus tag 1.0.2.
+2. Follow the release workflow through its sole build, attestations, and publication; fix only a concrete blocking failure.
+3. Download/verify main.js and styles.css attestations, then install the published assets and package the local ZIP.
+4. Record results, sync handoff, and stop extra checks. User reopens Obsidian and requests a fresh directory review if needed.
