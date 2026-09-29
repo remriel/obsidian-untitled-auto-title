@@ -94,7 +94,7 @@ The test suite covers rename safety, changed content, manual title choices, coll
 
 ## Release provenance
 
-Version tags trigger `.github/workflows/release.yml`. GitHub Actions builds the plugin once, creates build-provenance attestations for `main.js`, `manifest.json`, and `styles.css`, and publishes those three assets. Installer ZIP files are kept as local deliverables instead of GitHub release attachments.
+After pushing a version tag, run `gh workflow run release.yml --ref <version>` to release that exact tagged source. GitHub Actions builds the plugin once, creates build-provenance attestations for `main.js`, `manifest.json`, and `styles.css`, and publishes those three assets. Installer ZIP files are kept as local deliverables instead of GitHub release attachments.
 
 Verify a downloaded asset with GitHub CLI:
 

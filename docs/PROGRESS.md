@@ -19,7 +19,7 @@ Planned release: https://github.com/remriel/obsidian-untitled-auto-title/release
 
 Planned deliverables: local-only outputs/untitled-auto-title-1.0.2.zip and the updated setup guide.
 
-Blockers: none currently. GitHub Actions is enabled and official actions are allowed in the public repository. The malware-scan-unavailable disclosure remains a directory service limitation.
+Current publishing blocker: tag-push triggering did not schedule a run despite enabled Actions and an active workflow. Explicit workflow_dispatch is prepared to resolve it; no build has run yet. The malware-scan-unavailable disclosure remains a directory service limitation.
 
 Verification plan: the production build runs only in GitHub Actions for verifiable provenance. Confirm its completion, requested asset attestations, and installation hashes. No extra tests, lint, type checking, or UI checks are planned under build-once-publish. Prior direct Groq connectivity returned HTTP 403; native acceptance remains with the user.
 
@@ -27,7 +27,7 @@ Repository: https://github.com/remriel/obsidian-untitled-auto-title (public).
 
 ## Exact next steps
 
-1. Commit source and push main plus tag 1.0.2.
+1. Commit/push the explicit-dispatch workflow fix; guard and retarget the unpublished 1.0.2 tag, then dispatch release.yml at that tag.
 2. Follow the release workflow through its sole build, attestations, and publication; fix only a concrete blocking failure.
 3. Download/verify main.js and styles.css attestations, then install the published assets and package the local ZIP.
 4. Record results, sync handoff, and stop extra checks. User reopens Obsidian and requests a fresh directory review if needed.

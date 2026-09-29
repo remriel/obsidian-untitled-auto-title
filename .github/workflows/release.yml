@@ -1,9 +1,7 @@
 name: Build and attest release
 
 on:
-  push:
-    tags:
-      - '*.*.*'
+  workflow_dispatch:
 
 permissions:
   contents: write
