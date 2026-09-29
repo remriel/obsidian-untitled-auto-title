@@ -8,7 +8,7 @@ Create and install an Obsidian desktop plugin that generates concise content-bas
 - Installed Obsidian is `C:/Program Files/Obsidian/Obsidian.exe`, version 1.13.7. The console entry point is `Obsidian.com`.
 - Target vault: `C:/Users/Gev/OneDrive/Documents/Obsidian Vault`. It is not a Git repository. Read its existing project/progress docs before modifying installation metadata.
 - Groq uses the fixed HTTPS chat completions endpoint. Prefer the current production `openai/gpt-oss-20b` model; older Llama default examples are deprecated for standard accounts as of August 2026.
-- Read the API key at runtime from the selected environment variable. On Windows, fall back to the persistent user/machine environment if the launcher has stale inherited variables. Never save the actual key in plugin settings or the synced vault.
+- Read the API key at runtime from the selected inherited environment variable. Never save the actual key in plugin settings or the synced vault. Version 1.0.1 removes the Windows registry subprocess fallback because it triggered the Shell Execution review warning; do not reintroduce shell execution. If a launcher has stale environment variables, restart Obsidian from a terminal that has the key.
 - Debounce new/modified untitled notes; keep existing titled/daily/archive notes unchanged. Serialize generation and recheck filename and note contents before rename. Use `app.fileManager.renameFile` to respect link updates.
 - The plugin may offer local extraction as an explicit mode. Groq errors must remain visible; never silently fall back and permanently name a note after a failed AI request.
 
@@ -20,9 +20,13 @@ Create and install an Obsidian desktop plugin that generates concise content-bas
 - PowerShell and Node HTTPS Groq models requests return HTTP 403 with `Access denied. Please check your network settings.` No proxy environment variables are present. Obsidian's native request transport has not yet been tested; do not equate the result with an invalid key.
 - Obsidian CLI is disabled. The user switched to the build-once-publish skill after the successful build and installation, so CLI activation and native acceptance checks were skipped. No global CLI setting was changed.
 - Core implementation and 23 focused safety tests are complete. Tests cover content changes, manual renames, deletion/unload, collisions, exclusions, key handling, debouncing, serialization, and undo.
-- GitHub CLI is authenticated as `remriel`; create a private standalone plugin repository after verified implementation.
-- Version 1.0.0 source is synchronized to the private repository `https://github.com/remriel/obsidian-untitled-auto-title`. Release `https://github.com/remriel/obsidian-untitled-auto-title/releases/tag/1.0.0` is published with the installable ZIP and three Obsidian plugin assets.
+- GitHub CLI is authenticated as `remriel`. The repository `https://github.com/remriel/obsidian-untitled-auto-title` is now public, confirmed when resuming the review-fix task; the directory has scanned release 1.0.0.
+- Version 1.0.0 is published with the installable ZIP and three Obsidian plugin assets. Version 1.0.1 is prepared to address the user's scan findings.
+- Settings on Obsidian 1.13+ use `getSettingDefinitions`, native groups/controls, validation, and explicit value persistence. Newline-based controls adapt the existing array storage. Obsidian 1.12 uses the imperative fallback, whose headings now use `Setting.setHeading()`.
+- Plugin timers are explicitly scoped to `window`. YAML and Groq response values are narrowed from `unknown` before access. Filename control characters are handled by character codes instead of a control-character regex.
+- Local mode remains available without a Groq key. It extracts a heading or phrase; a separate local AI model integration was discussed but not requested or implemented.
+- The directory's unavailable malware scan is a service disclosure, not a code finding this plugin can correct.
 
 ## RESUME HERE
 
-Version 1.0.0 was built once, installed/enabled in the target vault, and published to the private GitHub repository and release. Installed file hashes matched the build during installation. Credentials were not copied. No active Untitled notes existed at the pre-install inventory. The user invoked build-once-publish after installation: native Obsidian/Groq acceptance belongs to the user and no additional validation was run. The earlier direct Groq HTTP 403 network-access result remains a material unverified-service boundary. Reopen Obsidian to load the plugin. Resume only on a new user request; preserve this workflow unless they request further checks.
+The user requested fixes for release 1.0.0's directory scan. Version 1.0.1 changes are implemented but await the single production build, installation, and publication. Follow build-once-publish: no extra lint/test/review loop. Publishing the new version triggers a fresh directory review; its result must not be claimed before observed. Keep the earlier Groq HTTP 403/native acceptance limitation explicit. Update the target vault's plugin files while preserving its existing settings.

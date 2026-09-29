@@ -5,6 +5,9 @@ import { DEFAULT_SETTINGS, excerpt, isExcluded, isUntitled, loadSettings, localT
 import { TitleEngine, type NoteFile } from "../src/engine";
 import { GROQ_ENDPOINT, groqTitle, titleRequest, type Transport } from "../src/groq";
 
+// Production timers belong to the Obsidian window; the Node harness supplies its timer host.
+Object.defineProperty(globalThis, "window", { configurable: true, value: { setTimeout, clearTimeout } });
+
 const sample = "We are planning a community garden with raised beds, composting, and a shared watering schedule.";
 
 function fixture(generator: (content: string, settings: TitleSettings) => Promise<string> = async () => "Community garden planning") {

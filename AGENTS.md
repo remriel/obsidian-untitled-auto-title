@@ -6,4 +6,4 @@ Maintain `docs/PROJECT_STATE.md` for durable architecture, constraints, discover
 
 Keep note content and credentials out of source control, build artifacts, logs, and reports. Use synthetic notes for development checks. Preserve manually chosen titles and use Obsidian's FileManager to rename files and update links.
 
-Keep completed source and release artifacts synchronized to the private GitHub repository.
+Keep completed source and release artifacts synchronized to the corresponding GitHub repository.

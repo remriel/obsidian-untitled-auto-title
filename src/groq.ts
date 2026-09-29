@@ -1,4 +1,4 @@
-import { excerpt, parseGeneratedTitle, type TitleSettings } from "./core";
+import { excerpt, isRecord, parseGeneratedTitle, type TitleSettings } from "./core";
 
 export const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -32,7 +32,7 @@ export function titleRequest(content: string, settings: TitleSettings): Record<s
 
 export async function groqTitle(content: string, settings: TitleSettings, key: string | null, transport: Transport): Promise<string> {
   if (!key) throw new Error(`No Groq key found in ${settings.environmentVariable}. Add it to your system environment, then restart Obsidian.`);
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  let timer: ReturnType<typeof window.setTimeout> | undefined;
   let response: HttpResponse;
   try {
     response = await Promise.race([
@@ -43,21 +43,24 @@ export async function groqTitle(content: string, settings: TitleSettings, key: s
         body: JSON.stringify(titleRequest(content, settings)),
       }),
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error("Groq did not respond within 25 seconds. The note was left untitled.")), 25000);
+        timer = window.setTimeout(() => reject(new Error("Groq did not respond within 25 seconds. The note was left untitled.")), 25000);
       }),
     ]);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof Error && error.message.startsWith("Groq did not respond")) throw error;
     // Never display raw transport errors: they can include headers or request content.
     throw new Error("Could not reach Groq. Check your connection. The note was left untitled.");
   } finally {
-    if (timer) clearTimeout(timer);
+    if (timer !== undefined) window.clearTimeout(timer);
   }
   if (response.status === 401) throw new Error("Groq rejected the API key. Update the system environment key and restart Obsidian.");
   if (response.status === 403) throw new Error("Groq denied access. Check network access and model permissions. The note was left untitled.");
   if (response.status === 429) throw new Error("Groq's request limit was reached. Try again later. The note was left untitled.");
   if (response.status === 400 || response.status === 404) throw new Error("Groq could not use this model or request. Check the model in settings. The note was left untitled.");
   if (response.status < 200 || response.status >= 300) throw new Error("Groq is temporarily unavailable. The note was left untitled.");
-  const data = response.json as { choices?: { message?: { content?: unknown } }[] } | null;
-  return parseGeneratedTitle(data?.choices?.[0]?.message?.content, settings.maximumTitleLength);
+  const data = response.json;
+  const choices: unknown = isRecord(data) ? data.choices : undefined;
+  const choice: unknown = Array.isArray(choices) ? choices[0] : undefined;
+  const message: unknown = isRecord(choice) ? choice.message : undefined;
+  return parseGeneratedTitle(isRecord(message) ? message.content : undefined, settings.maximumTitleLength);
 }

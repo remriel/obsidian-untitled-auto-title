@@ -52,6 +52,9 @@ var DEFAULT_SETTINGS = {
   excludedFolders: ["Templates", "docs"]
 };
 var clamp = (value, fallback, min, max) => typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+function isRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 function loadSettings(value) {
   const data = value && typeof value === "object" ? value : {};
   const strings = (entry, fallback) => Array.isArray(entry) ? entry.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean) : [...fallback];
@@ -110,7 +113,11 @@ function meaningfulLength(content) {
   return (noteText(content).match(/[\p{L}\p{N}]/gu) ?? []).length;
 }
 function sanitizeTitle(raw, maxLength) {
-  let title = raw.trim().replace(/^title\s*:\s*/i, "").replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, "").replace(/^#+\s*/, "").replace(/\.md$/i, "").replace(/[<>:"/\\|?*\u0000-\u001f\u007f\[\]#^]/g, " ").replace(/[*_`]/g, "").replace(/\s+/g, " ").replace(/^[.\s]+|[.\s]+$/g, "");
+  const printable = Array.from(raw, (character) => {
+    const code = character.codePointAt(0) ?? 0;
+    return code <= 31 || code === 127 ? " " : character;
+  }).join("");
+  let title = printable.trim().replace(/^title\s*:\s*/i, "").replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, "").replace(/^#+\s*/, "").replace(/\.md$/i, "").replace(/[<>:"/\\|?*#^]/g, " ").replaceAll("[", " ").replaceAll("]", " ").replace(/[*_`]/g, "").replace(/\s+/g, " ").replace(/^[.\s]+|[.\s]+$/g, "");
   const points = Array.from(title);
   if (points.length > maxLength) {
     title = points.slice(0, maxLength).join("");
@@ -184,7 +191,7 @@ var TitleEngine = class {
     const settings = this.dependencies.settings();
     if (this.disposed || !settings.enabled || !this.eligible(file) || this.suspended.has(file)) return;
     const delay = Math.max(settings.delaySeconds * 1e3, this.pauseUntil - Date.now());
-    this.timers.set(file, setTimeout(() => {
+    this.timers.set(file, window.setTimeout(() => {
       this.timers.delete(file);
       void this.enqueue(file, false);
     }, delay));
@@ -195,12 +202,12 @@ var TitleEngine = class {
   }
   cancelTimer(file) {
     const timer = this.timers.get(file);
-    if (timer) clearTimeout(timer);
+    if (timer !== void 0) window.clearTimeout(timer);
     this.timers.delete(file);
   }
   invalidate() {
     this.epoch++;
-    for (const timer of this.timers.values()) clearTimeout(timer);
+    for (const timer of this.timers.values()) window.clearTimeout(timer);
     this.timers.clear();
   }
   dispose() {
@@ -270,27 +277,10 @@ var TitleEngine = class {
 };
 
 // src/environment.ts
-var import_node_child_process = require("node:child_process");
 var import_node_process = __toESM(require("node:process"));
-function registryValue(path, name) {
-  return new Promise((resolve) => {
-    (0, import_node_child_process.execFile)("reg.exe", ["query", path, "/v", name], {
-      windowsHide: true,
-      timeout: 3e3,
-      maxBuffer: 16384
-    }, (error, stdout) => {
-      if (error) return resolve(null);
-      const line = stdout.split(/\r?\n/).find((entry) => /\sREG_(?:EXPAND_)?SZ\s/.test(entry));
-      resolve(line?.split(/\s+REG_(?:EXPAND_)?SZ\s+/)[1]?.trim() || null);
-    });
-  });
-}
-async function readApiKey(name) {
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return null;
-  const inherited = import_node_process.default.env[name]?.trim();
-  if (inherited) return inherited;
-  if (import_node_process.default.platform !== "win32") return null;
-  return await registryValue("HKCU\\Environment", name) ?? await registryValue("HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment", name);
+function readApiKey(name) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return Promise.resolve(null);
+  return Promise.resolve(import_node_process.default.env[name]?.trim() || null);
 }
 
 // src/groq.ts
@@ -325,14 +315,14 @@ async function groqTitle(content, settings, key, transport) {
         body: JSON.stringify(titleRequest(content, settings))
       }),
       new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error("Groq did not respond within 25 seconds. The note was left untitled.")), 25e3);
+        timer = window.setTimeout(() => reject(new Error("Groq did not respond within 25 seconds. The note was left untitled.")), 25e3);
       })
     ]);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Groq did not respond")) throw error;
     throw new Error("Could not reach Groq. Check your connection. The note was left untitled.");
   } finally {
-    if (timer) clearTimeout(timer);
+    if (timer !== void 0) window.clearTimeout(timer);
   }
   if (response.status === 401) throw new Error("Groq rejected the API key. Update the system environment key and restart Obsidian.");
   if (response.status === 403) throw new Error("Groq denied access. Check network access and model permissions. The note was left untitled.");
@@ -340,7 +330,10 @@ async function groqTitle(content, settings, key, transport) {
   if (response.status === 400 || response.status === 404) throw new Error("Groq could not use this model or request. Check the model in settings. The note was left untitled.");
   if (response.status < 200 || response.status >= 300) throw new Error("Groq is temporarily unavailable. The note was left untitled.");
   const data = response.json;
-  return parseGeneratedTitle(data?.choices?.[0]?.message?.content, settings.maximumTitleLength);
+  const choices = isRecord(data) ? data.choices : void 0;
+  const choice = Array.isArray(choices) ? choices[0] : void 0;
+  const message = isRecord(choice) ? choice.message : void 0;
+  return parseGeneratedTitle(isRecord(message) ? message.content : void 0, settings.maximumTitleLength);
 }
 
 // src/main.ts
@@ -471,7 +464,8 @@ var UntitledAutoTitle = class extends import_obsidian.Plugin {
     if (properties === null) return true;
     try {
       const parsed = (0, import_obsidian.parseYaml)(properties);
-      return parsed?.["auto-title"] !== false && parsed?.autotitle !== false;
+      if (parsed === null || parsed === void 0) return true;
+      return isRecord(parsed) && parsed["auto-title"] !== false && parsed.autotitle !== false;
     } catch {
       return false;
     }
@@ -536,25 +530,185 @@ var AutoTitleSettings = class extends import_obsidian.PluginSettingTab {
     super(app, plugin);
     this.plugin = plugin;
   }
+  getSettingDefinitions() {
+    this.containerEl?.addClass("auto-title-settings");
+    const groqVisible = () => this.plugin.settings.provider === "groq";
+    return [
+      {
+        name: "Make untitled notes findable.",
+        desc: "Write your note, then pause to get a title. Groq receives the eligible note's text; local mode works offline without an API key. Your environment key is never saved in the vault.",
+        searchable: false,
+        render: (setting) => {
+          setting.setHeading();
+          setting.settingEl.addClass("auto-title-banner");
+        }
+      },
+      {
+        name: "Automatic titles",
+        desc: "Rename eligible Untitled notes after you stop typing.",
+        control: { type: "toggle", key: "enabled", defaultValue: DEFAULT_SETTINGS.enabled }
+      },
+      {
+        name: "Title generator",
+        aliases: ["offline", "local", "AI", "Groq", "API key"],
+        control: {
+          type: "dropdown",
+          key: "provider",
+          defaultValue: DEFAULT_SETTINGS.provider,
+          options: { groq: "Groq AI", local: "Local heading or phrase (no key)" }
+        }
+      },
+      {
+        type: "group",
+        heading: "Groq connection",
+        visible: groqVisible,
+        items: [
+          {
+            name: "Environment variable",
+            desc: "Name of the variable containing your Groq API key. The key itself is never shown or saved.",
+            aliases: ["API key", "GROQ_API_KEY"],
+            control: {
+              type: "text",
+              key: "environmentVariable",
+              defaultValue: DEFAULT_SETTINGS.environmentVariable,
+              placeholder: "GROQ_API_KEY",
+              validate: (value) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(value.trim()) ? void 0 : "Enter a valid environment variable name."
+            }
+          },
+          {
+            name: "Environment key",
+            searchable: false,
+            render: (setting) => {
+              setting.settingEl.addClass("auto-title-key-status");
+              setting.setDesc("Checking environment key...");
+              void readApiKey(this.plugin.settings.environmentVariable).then((key) => {
+                if (setting.settingEl.isConnected) setting.setDesc(key ? "Environment key found. Ready to connect." : "Environment key not found. Restart Obsidian from a terminal where the variable is available, or choose local mode.");
+              });
+            }
+          },
+          {
+            name: "Groq model",
+            desc: "Default: openai/gpt-oss-20b. Enter another supported Groq text model if needed.",
+            control: {
+              type: "text",
+              key: "model",
+              defaultValue: DEFAULT_SETTINGS.model,
+              validate: (value) => /^[A-Za-z0-9_./-]{1,120}$/.test(value.trim()) ? void 0 : "Enter a valid Groq model ID."
+            }
+          },
+          {
+            name: "Check connection",
+            desc: "Generate a title from a built-in sample. No personal note is sent.",
+            render: (setting) => {
+              setting.addButton((button) => button.setButtonText("Test Groq").setCta().onClick(async () => {
+                button.setDisabled(true).setButtonText("Testing...");
+                await this.plugin.testConnection();
+                button.setDisabled(false).setButtonText("Test Groq");
+              }));
+            }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "When to title",
+        items: [
+          this.numberDefinition("Pause before generation", "Seconds of inactivity before generating a title.", "delaySeconds", 2, 120),
+          this.numberDefinition("Minimum note content", "Minimum number of letters and digits before a note is eligible.", "minimumCharacters", 5, 2e3),
+          {
+            name: "Include existing untitled notes on startup",
+            desc: "Check eligible notes when Obsidian opens. Existing chosen titles are preserved.",
+            control: { type: "toggle", key: "processOnStartup", defaultValue: DEFAULT_SETTINGS.processOnStartup }
+          },
+          {
+            name: "Untitled names",
+            desc: "One exact placeholder per line. Numbered copies such as Untitled 1 are included.",
+            control: { type: "textarea", key: "untitledPrefixes", defaultValue: DEFAULT_SETTINGS.untitledPrefixes.join("\n"), rows: 3 }
+          },
+          {
+            name: "Excluded folders",
+            desc: "Vault-relative folder paths, one per line. Hidden folders and the trash are always excluded.",
+            control: { type: "textarea", key: "excludedFolders", defaultValue: DEFAULT_SETTINGS.excludedFolders.join("\n"), rows: 3 }
+          }
+        ]
+      },
+      {
+        type: "group",
+        heading: "Title details",
+        items: [
+          this.numberDefinition("Maximum title length", "Maximum characters in the generated filename.", "maximumTitleLength", 20, 120),
+          {
+            ...this.numberDefinition("Maximum note text sent", "Long notes use an excerpt from the beginning and end. Properties and hidden comments are excluded.", "maximumContentCharacters", 1e3, 3e4),
+            visible: groqVisible
+          },
+          {
+            name: "Show rename notices",
+            control: { type: "toggle", key: "showNotices", defaultValue: DEFAULT_SETTINGS.showNotices }
+          }
+        ]
+      },
+      {
+        name: "Keep control",
+        desc: "Set the note property auto-title to false to skip it. Use the command palette to title all untitled notes, title the current note, or undo the last generated title. Generated titles stay fixed when you continue editing.",
+        render: (setting) => {
+          setting.settingEl.addClass("auto-title-help");
+        }
+      }
+    ];
+  }
+  getControlValue(key) {
+    if (key === "untitledPrefixes" || key === "excludedFolders") return this.plugin.settings[key].join("\n");
+    if (!Object.hasOwn(DEFAULT_SETTINGS, key)) return void 0;
+    return this.plugin.settings[key];
+  }
+  async setControlValue(key, value) {
+    if (!Object.hasOwn(DEFAULT_SETTINGS, key)) return;
+    let candidate = value;
+    if (key === "untitledPrefixes" || key === "excludedFolders") {
+      if (typeof value !== "string") return;
+      candidate = value.split("\n").map((line) => line.trim()).filter(Boolean);
+    } else if ((key === "environmentVariable" || key === "model") && typeof value === "string") {
+      candidate = value.trim();
+    }
+    this.plugin.settings = loadSettings({ ...this.plugin.settings, [key]: candidate });
+    await this.plugin.saveSettings();
+    if (key === "provider") this.refreshDomState();
+  }
+  numberDefinition(name, desc, key, min, max) {
+    return {
+      name,
+      desc,
+      control: {
+        type: "number",
+        key,
+        defaultValue: DEFAULT_SETTINGS[key],
+        min,
+        max,
+        step: 1,
+        validate: (value) => Number.isInteger(value) && value >= min && value <= max ? void 0 : `Enter a whole number between ${min} and ${max}.`
+      }
+    };
+  }
+  // Obsidian versions before 1.13 use the imperative settings fallback.
   display() {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.addClass("auto-title-settings");
     const banner = containerEl.createDiv({ cls: "auto-title-banner" });
-    banner.createEl("h2", { text: "MAKE UNTITLED NOTES FINDABLE." });
+    new import_obsidian.Setting(banner).setName("Make untitled notes findable.").setHeading();
     banner.createEl("p", { text: "Write your note. Pause for a moment. Get a title that describes it." });
     banner.createEl("p", { cls: "auto-title-detail", text: "Groq receives text from the note being titled, up to the configured limit. Your API key is read from your system environment and is never saved in the vault." });
     new import_obsidian.Setting(containerEl).setName("Automatic titles").setDesc("Rename eligible Untitled notes after you stop typing.").addToggle((toggle) => toggle.setValue(this.plugin.settings.enabled).onChange(async (value) => {
       this.plugin.settings.enabled = value;
       await this.plugin.saveSettings();
     }));
-    new import_obsidian.Setting(containerEl).setName("Title generator").addDropdown((dropdown) => dropdown.addOption("groq", "Groq AI").addOption("local", "Local heading or phrase").setValue(this.plugin.settings.provider).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("Title generator").addDropdown((dropdown) => dropdown.addOption("groq", "Groq AI").addOption("local", "Local heading or phrase (no key)").setValue(this.plugin.settings.provider).onChange(async (value) => {
       this.plugin.settings.provider = value === "local" ? "local" : "groq";
       await this.plugin.saveSettings();
       this.display();
     }));
     if (this.plugin.settings.provider === "groq") {
-      containerEl.createEl("h3", { text: "GROQ CONNECTION" });
+      new import_obsidian.Setting(containerEl).setName("Groq connection").setHeading();
       new import_obsidian.Setting(containerEl).setName("Environment variable").setDesc("Name of the variable containing your Groq API key. The key itself is never shown or saved.").addText((text) => text.setValue(this.plugin.settings.environmentVariable).setPlaceholder("GROQ_API_KEY").onChange(async (value) => {
         if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(value.trim())) {
           this.plugin.settings.environmentVariable = value.trim();
@@ -563,7 +717,7 @@ var AutoTitleSettings = class extends import_obsidian.PluginSettingTab {
       }));
       const keyStatus = containerEl.createDiv({ cls: "auto-title-key-status", text: "Checking environment key..." });
       void readApiKey(this.plugin.settings.environmentVariable).then((key) => {
-        if (keyStatus.isConnected) keyStatus.setText(key ? "Environment key found. Ready to connect." : "Environment key not found. Set it in your system environment and restart Obsidian.");
+        if (keyStatus.isConnected) keyStatus.setText(key ? "Environment key found. Ready to connect." : "Environment key not found. Restart Obsidian from a terminal where the variable is available, or choose local mode.");
       });
       new import_obsidian.Setting(containerEl).setName("Groq model").setDesc("Default: openai/gpt-oss-20b. Enter another supported Groq text model if needed.").addText((text) => text.setValue(this.plugin.settings.model).onChange(async (value) => {
         if (/^[A-Za-z0-9_./-]{1,120}$/.test(value.trim())) {
@@ -571,13 +725,13 @@ var AutoTitleSettings = class extends import_obsidian.PluginSettingTab {
           await this.plugin.saveSettings();
         }
       }));
-      new import_obsidian.Setting(containerEl).setName("Check connection").setDesc("Generate a title from a built-in sample. No personal note is sent.").addButton((button) => button.setButtonText("TEST GROQ").setCta().onClick(async () => {
-        button.setDisabled(true).setButtonText("TESTING...");
+      new import_obsidian.Setting(containerEl).setName("Check connection").setDesc("Generate a title from a built-in sample. No personal note is sent.").addButton((button) => button.setButtonText("Test Groq").setCta().onClick(async () => {
+        button.setDisabled(true).setButtonText("Testing...");
         await this.plugin.testConnection();
-        button.setDisabled(false).setButtonText("TEST GROQ");
+        button.setDisabled(false).setButtonText("Test Groq");
       }));
     }
-    containerEl.createEl("h3", { text: "WHEN TO TITLE" });
+    new import_obsidian.Setting(containerEl).setName("When to title").setHeading();
     this.numberSetting("Pause before generation", "Seconds of inactivity before generating a title.", "delaySeconds", 2, 120);
     this.numberSetting("Minimum note content", "Minimum number of letters and digits before a note is eligible.", "minimumCharacters", 5, 2e3);
     new import_obsidian.Setting(containerEl).setName("Include existing untitled notes on startup").setDesc("Check eligible notes when Obsidian opens. Existing chosen titles are preserved.").addToggle((toggle) => toggle.setValue(this.plugin.settings.processOnStartup).onChange(async (value) => {
@@ -592,7 +746,7 @@ var AutoTitleSettings = class extends import_obsidian.PluginSettingTab {
       this.plugin.settings.excludedFolders = value.split("\n").map((line) => line.trim()).filter(Boolean);
       await this.plugin.saveSettings();
     }));
-    containerEl.createEl("h3", { text: "TITLE DETAILS" });
+    new import_obsidian.Setting(containerEl).setName("Title details").setHeading();
     this.numberSetting("Maximum title length", "Maximum characters in the generated filename.", "maximumTitleLength", 20, 120);
     if (this.plugin.settings.provider === "groq") this.numberSetting("Maximum note text sent", "Long notes use an excerpt from the beginning and end. Properties and hidden comments are excluded.", "maximumContentCharacters", 1e3, 3e4);
     new import_obsidian.Setting(containerEl).setName("Show rename notices").addToggle((toggle) => toggle.setValue(this.plugin.settings.showNotices).onChange(async (value) => {

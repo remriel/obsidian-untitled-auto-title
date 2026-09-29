@@ -31,6 +31,10 @@ export const DEFAULT_SETTINGS: TitleSettings = {
 const clamp = (value: unknown, fallback: number, min: number, max: number): number =>
   typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
 
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 export function loadSettings(value: unknown): TitleSettings {
   const data = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const strings = (entry: unknown, fallback: string[]): string[] => Array.isArray(entry)
@@ -106,12 +110,18 @@ export function meaningfulLength(content: string): number {
 }
 
 export function sanitizeTitle(raw: string, maxLength: number): string {
-  let title = raw.trim()
+  const printable = Array.from(raw, character => {
+    const code = character.codePointAt(0) ?? 0;
+    return code <= 31 || code === 127 ? " " : character;
+  }).join("");
+  let title = printable.trim()
     .replace(/^title\s*:\s*/i, "")
     .replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, "")
     .replace(/^#+\s*/, "")
     .replace(/\.md$/i, "")
-    .replace(/[<>:"/\\|?*\u0000-\u001f\u007f\[\]#^]/g, " ")
+    .replace(/[<>:"/\\|?*#^]/g, " ")
+    .replaceAll("[", " ")
+    .replaceAll("]", " ")
     .replace(/[*_`]/g, "")
     .replace(/\s+/g, " ")
     .replace(/^[.\s]+|[.\s]+$/g, "");

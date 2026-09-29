@@ -21,7 +21,7 @@ export interface EngineDependencies<T extends NoteFile> {
 
 export class TitleEngine<T extends NoteFile> {
   private readonly dependencies: EngineDependencies<T>;
-  private readonly timers = new Map<T, ReturnType<typeof setTimeout>>();
+  private readonly timers = new Map<T, ReturnType<typeof window.setTimeout>>();
   private readonly revisions = new WeakMap<T, number>();
   private readonly suspended = new WeakSet<T>();
   private readonly queued = new Set<T>();
@@ -53,7 +53,7 @@ export class TitleEngine<T extends NoteFile> {
     const settings = this.dependencies.settings();
     if (this.disposed || !settings.enabled || !this.eligible(file) || this.suspended.has(file)) return;
     const delay = Math.max(settings.delaySeconds * 1000, this.pauseUntil - Date.now());
-    this.timers.set(file, setTimeout(() => {
+    this.timers.set(file, window.setTimeout(() => {
       this.timers.delete(file);
       void this.enqueue(file, false);
     }, delay));
@@ -66,13 +66,13 @@ export class TitleEngine<T extends NoteFile> {
 
   private cancelTimer(file: T): void {
     const timer = this.timers.get(file);
-    if (timer) clearTimeout(timer);
+    if (timer !== undefined) window.clearTimeout(timer);
     this.timers.delete(file);
   }
 
   invalidate(): void {
     this.epoch++;
-    for (const timer of this.timers.values()) clearTimeout(timer);
+    for (const timer of this.timers.values()) window.clearTimeout(timer);
     this.timers.clear();
   }
 
@@ -126,7 +126,7 @@ export class TitleEngine<T extends NoteFile> {
       this.pauseUntil = 0;
       this.dependencies.onRename?.(newPath.slice(newPath.lastIndexOf("/") + 1, -3));
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       if (this.disposed || epoch !== this.epoch) return false;
       this.lastError = error instanceof Error ? error.message : "Title generation failed. The note was left untitled.";
       this.pauseUntil = Date.now() + 60000;

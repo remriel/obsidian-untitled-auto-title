@@ -10,7 +10,9 @@ An Obsidian desktop plugin that generates concise, content-based titles for unti
 
 `Untitled 1`, `Untitled-2`, and similar numbered placeholders are also supported. Chosen filenames, dated journal notes, templates, hidden folders, and trash are excluded. After a title is generated, it stays fixed while you continue writing.
 
-The plugin reads `GROQ_API_KEY` from the environment at runtime. On Windows it can also read the persistent user or machine environment when Obsidian was started by a launcher with an older environment. The key is never copied into settings, source, archives, or synced vault files.
+The plugin reads `GROQ_API_KEY` from Obsidian's inherited environment at runtime. Restart Obsidian after setting the variable; if a desktop launcher has an older environment, launch Obsidian from a terminal where the variable is available. The plugin does not run shell commands or query the Windows registry. The key is never copied into settings, source, archives, or synced vault files.
+
+For titles without an API key, select **Local heading or phrase** in the plugin settings. This mode works offline and extracts a heading or meaningful phrase from the note.
 
 Groq receives text from the note being titled, capped at 12,000 characters by default. For longer notes, an excerpt includes the beginning and end. YAML properties, hidden comments, and image embeds are removed from the request. Other content, such as code and visible links, can be included.
 
@@ -43,6 +45,8 @@ Restart Obsidian, then enable **Untitled Auto Title** under **Settings → Commu
 ## Settings and commands
 
 Open **Settings → Untitled Auto Title** to change the idle delay, minimum note content, maximum title length, Groq model, environment variable name, excluded folders, and placeholder names. The connection test uses a built-in sample note.
+
+On Obsidian 1.13 and later, these controls are available in Obsidian's settings search. Older versions use the same controls through the compatibility settings page.
 
 The command palette includes:
 
