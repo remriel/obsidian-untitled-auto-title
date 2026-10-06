@@ -2,14 +2,14 @@
 
 Objective: create a unique Community directory icon for Untitled Auto Title.
 
-Progress: 75% [#######---] — icon artwork is generated and saved in the repo and outputs; commit/push and listing upload remain.
+Progress: 90% [#########-] — icon artwork is generated and pushed to GitHub; community-listing upload remains.
 
 - [x] Reconcile repo instructions, project state, and Git status.
 - [x] Confirm the community-directory icon is managed in listing settings, not in `manifest.json`.
 - [x] Generate a square teal/ivory title-reveal icon with a bright cursor-spark.
 - [x] Save the same 1254×1254 PNG under `assets/community-icon.png` and task outputs.
 - [x] Confirm repo changes are limited to the icon and handoff documentation; whitespace check is clean.
-- [ ] Commit and push the icon asset.
+- [x] Commit and push the icon asset on `codex/community-icon-untitled-auto-title` (`e838816`).
 - [ ] Upload it through the Community directory **Edit listing** form if the signed-in editor is accessible.
 
 Current state: version 1.0.2 is still installed/enabled and published. Tag/source commit 87a07d4. Icon art does not change runtime code or release assets.
