@@ -1,5 +1,7 @@
 # Untitled Auto Title
 
+![Untitled Auto Title: an Obsidian note is automatically renamed from Untitled 1.md to a meaningful title.](assets/readme-banner.svg)
+
 An Obsidian desktop plugin that generates concise, content-based titles for untitled Markdown notes with Groq.
 
 ## How it works
