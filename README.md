@@ -2,6 +2,8 @@
 
 ![Untitled Auto Title: an Obsidian note is automatically renamed from Untitled 1.md to a meaningful title.](assets/readme-banner.svg)
 
+**[Download the latest Obsidian plugin files](https://github.com/remriel/obsidian-untitled-auto-title/releases/latest)** · [Installation](#installation) · [How it works](#how-it-works)
+
 An Obsidian desktop plugin that generates concise, content-based titles for untitled Markdown notes with Groq.
 
 ## How it works
@@ -108,3 +110,8 @@ gh attestation verify styles.css --repo remriel/obsidian-untitled-auto-title
 ## Removal
 
 Disable or uninstall **Untitled Auto Title** through **Settings → Community plugins**. Existing generated filenames remain. Use the undo command before disabling if you want to restore the last generated filename in the current session.
+
+## More Obsidian projects
+
+- [Automatic Mood History](https://github.com/remriel/automatic-mood-history): mood and emotion trends from Obsidian journals, with local analysis and optional Groq.
+- [Acid Xerox](https://github.com/remriel/acid-xerox-theme): a maximalist 90s-inspired Obsidian theme.
